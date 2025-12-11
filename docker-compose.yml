@@ -18,6 +18,25 @@ services:
     networks:
       - ecommerce-network
 
+  gateway:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: gateway
+    container_name: gateway
+    environment:
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
   order-service:
     build:
       context: ./backend
@@ -90,6 +109,17 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3333:80"
     networks:
       - ecommerce-network
     restart: unless-stopped
