@@ -1,10 +1,11 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { PaymentServiceService } from './payment-service.service';
-import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { EventPattern, Payload } from '@nestjs/microservices';
 import { InventoryReservedEvent } from '../../common/dto/events.dto';
 
 @Controller()
 export class PaymentServiceController {
+  private readonly logger = new Logger(PaymentServiceController.name);
   constructor(private readonly paymentServiceService: PaymentServiceService) {}
 
   @Get()
@@ -15,10 +16,10 @@ export class PaymentServiceController {
   @EventPattern('inventory.reserved')
   async handleInventoryReserved(@Payload() data: InventoryReservedEvent) {
     try {
-      console.log('[Payment Service] Received inventory.reserved event:', data);
+  this.logger.log(`Received inventory.reserved event: ${data.orderId}`);
       await this.paymentServiceService.processPayment(data);
     } catch (error) {
-      console.error('[Payment Service] Error processing inventory.reserved:', error);
+  this.logger.error('Error processing inventory.reserved', error as any);
     }
   }
 }

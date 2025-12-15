@@ -1,10 +1,11 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { InventoryServiceService } from './inventory-service.service';
-import { EventPattern, Payload, Ctx, RmqContext, MessagePattern } from '@nestjs/microservices';
+import { EventPattern, Payload, MessagePattern } from '@nestjs/microservices';
 import { OrderCreatedEvent, OrderCancelledEvent } from '../../common/dto/events.dto';
 
 @Controller()
 export class InventoryServiceController {
+  private readonly logger = new Logger(InventoryServiceController.name);
   constructor(private readonly inventoryServiceService: InventoryServiceService) {}
 
   @Get()
@@ -12,13 +13,13 @@ export class InventoryServiceController {
     return this.inventoryServiceService.getHello();
   }
 
-  @MessagePattern('order.created')
+  @EventPattern('order.created')
   async handleOrderCreated(@Payload() data: OrderCreatedEvent) {
     try {
-      console.log('[Inventory Service] Received order.created event:', data);
+  this.logger.log(`Received order.created event: ${data.orderId}`);
       await this.inventoryServiceService.reserveStock(data);
     } catch (error) {
-      console.error('[Inventory Service] Error processing order.created:', error);
+  this.logger.error('Error processing order.created', error as any);
       // Let Nest/RMQ transport handle ack/nack and reconnection
     }
   }
@@ -26,16 +27,16 @@ export class InventoryServiceController {
   @EventPattern('order.cancelled')
   async handleOrderCancelled(@Payload() data: OrderCancelledEvent) {
     try {
-      console.log('[Inventory Service] Received order.cancelled event:', data);
+  this.logger.log(`Received order.cancelled event: ${data.orderId}`);
       await this.inventoryServiceService.releaseStock(data);
     } catch (error) {
-      console.error('[Inventory Service] Error processing order.cancelled:', error);
+  this.logger.error('Error processing order.cancelled', error as any);
       // Let Nest/RMQ transport handle ack/nack and reconnection
     }
   }
 
   @EventPattern('inventory.reserved')
   async handleInventoryReserved(@Payload() data: any) {
-      console.log('[Inventory Service] Received inventory.reserved event:', data);
+  this.logger.log(`Received inventory.reserved event: ${data.orderId ?? 'unknown'}`);
   }
 }

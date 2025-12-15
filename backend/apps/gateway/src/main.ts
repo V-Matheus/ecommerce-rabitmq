@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { GatewayModule } from './gateway.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   // Criar app HTTP
@@ -18,6 +19,7 @@ async function bootstrap() {
     options: {
       urls: ['amqp://admin:admin@rabbitmq:5672'],
       exchange: 'ecommerce.exchange',
+      exchangeType: 'topic',
       queue: 'gateway-queue',
       queueOptions: {
         durable: false,
@@ -27,8 +29,8 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   await app.listen(process.env.port ?? 3000);
-  
-  console.log('Gateway is running on http://localhost:3000');
-  console.log('Gateway is also listening on RabbitMQ for events');
+  const logger = new Logger('GatewayBootstrap');
+  logger.log('Gateway is running on http://localhost:3000');
+  logger.log('Gateway is also listening on RabbitMQ for events');
 }
 void bootstrap();

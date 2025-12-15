@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { PaymentServiceModule } from './payment-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
@@ -10,6 +11,7 @@ async function bootstrap() {
       options: {
         urls: ['amqp://admin:admin@rabbitmq:5672'],
         exchange: 'ecommerce.exchange',
+        exchangeType: 'topic',
         queue: 'payment-queue',
         queueOptions: {
           durable: false,
@@ -19,7 +21,8 @@ async function bootstrap() {
   );
 
   await app.listen();
-  console.log('Payment Service is listening on RabbitMQ...');
+  const logger = new Logger('PaymentBootstrap');
+  logger.log('Payment Service is listening on RabbitMQ...');
 }
 
 bootstrap();

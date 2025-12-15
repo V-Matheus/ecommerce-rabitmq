@@ -1,10 +1,11 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { ShippingServiceService } from './shipping-service.service';
-import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { EventPattern, Payload } from '@nestjs/microservices';
 import { PaymentApprovedEvent } from '../../common/dto/events.dto';
 
 @Controller()
 export class ShippingServiceController {
+  private readonly logger = new Logger(ShippingServiceController.name);
   constructor(private readonly shippingServiceService: ShippingServiceService) {}
 
   @Get()
@@ -15,10 +16,10 @@ export class ShippingServiceController {
   @EventPattern('payment.approved')
   async handlePaymentApproved(@Payload() data: PaymentApprovedEvent) {
     try {
-      console.log('[Shipping Service] Received payment.approved event:', data);
-      await this.shippingServiceService.createShipment(data);
+    this.logger.log(`Received payment.approved event: ${data.orderId}`);
+    await this.shippingServiceService.createShipment(data);
     } catch (error) {
-      console.error('[Shipping Service] Error processing payment.approved:', error);
+  this.logger.error('Error processing payment.approved', error as any);
     }
   }
 }

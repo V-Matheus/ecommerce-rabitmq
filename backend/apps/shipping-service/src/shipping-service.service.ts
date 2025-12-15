@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   PaymentApprovedEvent,
@@ -15,6 +15,7 @@ interface Shipment {
 
 @Injectable()
 export class ShippingServiceService {
+  private readonly logger = new Logger(ShippingServiceService.name);
   private shipments: Shipment[] = [];
   private shipmentIdCounter = 1;
 
@@ -28,7 +29,7 @@ export class ShippingServiceService {
   }
 
   async createShipment(paymentEvent: PaymentApprovedEvent): Promise<void> {
-    console.log('[Shipping Service] Creating shipment for order:', paymentEvent.orderId);
+  this.logger.log(`Creating shipment for order: ${paymentEvent.orderId}`);
 
     const shipmentId = this.shipmentIdCounter++;
     const trackingCode = `TRK${Date.now()}${shipmentId}`;
@@ -42,7 +43,7 @@ export class ShippingServiceService {
 
     this.shipments.push(shipment);
 
-    console.log('[Shipping Service] Shipment created:', trackingCode);
+  this.logger.log(`Shipment created: ${trackingCode}`);
 
     // Publicar evento de envio criado
     const createdEvent: ShippingCreatedEvent = {
@@ -60,7 +61,7 @@ export class ShippingServiceService {
   }
 
   private deliverShipment(shipment: Shipment): void {
-    console.log('[Shipping Service] Delivering shipment:', shipment.trackingCode);
+    this.logger.log(`Delivering shipment: ${shipment.trackingCode}`);
 
     shipment.status = 'DELIVERED';
 
@@ -71,7 +72,7 @@ export class ShippingServiceService {
       deliveredAt: new Date(),
     };
 
-    this.rabbitClient.emit('shipping.delivered', deliveredEvent);
-    console.log('[Shipping Service] Shipment delivered:', shipment.trackingCode);
+  this.rabbitClient.emit('shipping.delivered', deliveredEvent);
+  this.logger.log(`Shipment delivered: ${shipment.trackingCode}`);
   }
 }

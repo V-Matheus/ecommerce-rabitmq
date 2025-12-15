@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Post, Param } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Param, Logger } from '@nestjs/common';
 import { GatewayService } from './gateway.service';
 import { ClientProxy, EventPattern, Payload } from '@nestjs/microservices';
 import {
@@ -10,6 +10,7 @@ import { OrderCreatedEvent, InventoryReservedEvent, InventoryInsufficientEvent, 
 
 @Controller()
 export class GatewayController {
+  private readonly logger = new Logger(GatewayController.name);
   private orders: Map<number, OrderResponseDto> = new Map();
   private orderIdCounter = 1;
 
@@ -35,14 +36,13 @@ export class GatewayController {
 
   @Get('products')
   getProducts(): ProductDto[] {
-    console.log('[Gateway] Getting products list');
-    return this.products;
+  this.logger.debug('Getting products list');
+  return this.products;
   }
 
   @Get('orders')
   getOrders(): OrderResponseDto[] {
-    console.log('[Gateway] Getting all orders');
-    return Array.from(this.orders.values());
+  return Array.from(this.orders.values());
   }
 
   @Get('orders/:id')
@@ -51,16 +51,17 @@ export class GatewayController {
     const order = this.orders.get(orderId);
     
     if (!order) {
+      this.logger.warn(`Order not found: ${orderId}`);
       return { error: 'Order not found' };
     }
     
-    console.log('[Gateway] Getting order:', orderId);
+    this.logger.debug(`Getting order: ${orderId}`);
     return order;
   }
 
   @Post('orders')
   createOrder(@Body() createOrderDto: CreateOrderDto): OrderResponseDto {
-    console.log('[Gateway] Creating new order:', createOrderDto);
+  this.logger.log(`Creating new order for customer ${createOrderDto.customerId}`);
 
     // Calcular total estimado
     let estimatedTotal = 0;
@@ -89,9 +90,14 @@ export class GatewayController {
       items: createOrderDto.items,
     };
 
-  // Publish to inventory so it can reserve stock
-  this.inventoryClient.send('order.created', event);
-  console.log('[Gateway] Order created and event published to inventory:', orderId);
+    // Publish to inventory so it can reserve stock
+    try {
+      // use emit for fire-and-forget message
+      this.inventoryClient.emit('order.created', event);
+      this.logger.log(`Order created and event published to inventory: ${orderId}`);
+    } catch (error) {
+      this.logger.error('Failed to publish order.created event', error as any);
+    }
 
     return order;
   }
@@ -100,70 +106,88 @@ export class GatewayController {
 
   @EventPattern('inventory.reserved')
   handleInventoryReserved(@Payload() data: InventoryReservedEvent) {
-    console.log('[Gateway] Inventory reserved for order:', data.orderId);
-    
-    const order = this.orders.get(data.orderId);
-    if (order) {
-      order.status = 'PROCESSING';
-      order.total = data.total;
-      this.orders.set(data.orderId, order);
-    }
+    try {
+      this.logger.log(`Inventory reserved for order: ${data.orderId}`);
 
-    // Atualizar estoque local
-    for (const item of data.items) {
-      const product = this.products.find(p => p.id === item.productId);
-      if (product) {
-        product.stock -= item.quantity;
+      const order = this.orders.get(data.orderId);
+      if (order) {
+        order.status = 'PROCESSING';
+        order.total = data.total;
+        this.orders.set(data.orderId, order);
       }
+
+      // Atualizar estoque local
+      for (const item of data.items) {
+        const product = this.products.find(p => p.id === item.productId);
+        if (product) {
+          product.stock -= item.quantity;
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error handling inventory.reserved', error as any);
     }
   }
 
   @EventPattern('inventory.insufficient')
   handleInventoryInsufficient(@Payload() data: InventoryInsufficientEvent) {
-    console.log('[Gateway] Insufficient inventory for order:', data.orderId);
-    
-    const order = this.orders.get(data.orderId);
-    if (order) {
-      order.status = 'CANCELLED';
-      this.orders.set(data.orderId, order);
+    try {
+      this.logger.warn(`Insufficient inventory for order: ${data.orderId}`);
+      const order = this.orders.get(data.orderId);
+      if (order) {
+        order.status = 'CANCELLED';
+        this.orders.set(data.orderId, order);
+      }
+    } catch (error) {
+      this.logger.error('Error handling inventory.insufficient', error as any);
     }
   }
 
   @EventPattern('payment.failed')
   handlePaymentFailed(@Payload() data: PaymentFailedEvent) {
-    console.log('[Gateway] Payment failed for order:', data.orderId);
-    
-    const order = this.orders.get(data.orderId);
-    if (order) {
-      order.status = 'CANCELLED';
-      this.orders.set(data.orderId, order);
+    try {
+      this.logger.warn(`Payment failed for order: ${data.orderId}. Reason: ${data.reason ?? 'unknown'}`);
+      const order = this.orders.get(data.orderId);
+      if (order) {
+        order.status = 'CANCELLED';
+        this.orders.set(data.orderId, order);
+      }
+    } catch (error) {
+      this.logger.error('Error handling payment.failed', error as any);
     }
   }
 
   @EventPattern('order.cancelled')
   handleOrderCancelled(@Payload() data: any) {
-    console.log('[Gateway] Order cancelled:', data.orderId);
-    
-    const order = this.orders.get(data.orderId);
-    if (order) {
-      // Devolver estoque
-      for (const item of data.items) {
-        const product = this.products.find(p => p.id === item.productId);
-        if (product) {
-          product.stock += item.quantity;
+    try {
+      this.logger.log(`Order cancelled: ${data.orderId}`);
+      const order = this.orders.get(data.orderId);
+      if (order) {
+        order.status = 'CANCELLED';
+        this.orders.set(data.orderId, order);
+        // Devolver estoque
+        for (const item of data.items) {
+          const product = this.products.find(p => p.id === item.productId);
+          if (product) {
+            product.stock += item.quantity;
+          }
         }
       }
+    } catch (error) {
+      this.logger.error('Error handling order.cancelled', error as any);
     }
   }
 
   @EventPattern('shipping.delivered')
   handleShippingDelivered(@Payload() data: ShippingDeliveredEvent) {
-    console.log('[Gateway] Order delivered:', data.orderId);
-    
-    const order = this.orders.get(data.orderId);
-    if (order) {
-      order.status = 'COMPLETED';
-      this.orders.set(data.orderId, order);
+    try {
+      this.logger.log(`Order delivered: ${data.orderId}`);
+      const order = this.orders.get(data.orderId);
+      if (order) {
+        order.status = 'COMPLETED';
+        this.orders.set(data.orderId, order);
+      }
+    } catch (error) {
+      this.logger.error('Error handling shipping.delivered', error as any);
     }
   }
 }

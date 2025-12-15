@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ShippingServiceModule } from './shipping-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
@@ -18,6 +19,7 @@ async function bootstrap() {
   );
 
   await app.listen();
-  console.log('Shipping Service is listening on RabbitMQ...');
+  const logger = new Logger('ShippingBootstrap');
+  logger.log('Shipping Service is listening on RabbitMQ...');
 }
 bootstrap();

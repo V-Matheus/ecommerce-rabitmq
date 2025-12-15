@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
 import {
   InventoryReservedEvent,
   PaymentApprovedEvent,
@@ -15,6 +16,7 @@ interface Payment {
 
 @Injectable()
 export class PaymentServiceService {
+  private readonly logger = new Logger(PaymentServiceService.name);
   private payments: Payment[] = [];
   private paymentIdCounter = 1;
 
@@ -28,7 +30,7 @@ export class PaymentServiceService {
   }
 
   async processPayment(inventoryEvent: InventoryReservedEvent): Promise<void> {
-    console.log('[Payment Service] Processing payment for order:', inventoryEvent.orderId);
+    this.logger.log(`Processing payment for order: ${inventoryEvent.orderId}`);
 
     const paymentId = this.paymentIdCounter++;
     
@@ -36,7 +38,7 @@ export class PaymentServiceService {
     const shouldFail = Math.random() < 0.1;
 
     if (shouldFail) {
-      console.log('[Payment Service] Payment FAILED for order:', inventoryEvent.orderId);
+      this.logger.warn(`Payment FAILED for order: ${inventoryEvent.orderId}`);
       
       const payment: Payment = {
         id: paymentId,
@@ -57,7 +59,7 @@ export class PaymentServiceService {
     }
 
     // Pagamento aprovado
-    console.log('[Payment Service] Payment APPROVED for order:', inventoryEvent.orderId, 'Amount:', inventoryEvent.total);
+    this.logger.log(`Payment APPROVED for order: ${inventoryEvent.orderId} Amount: ${inventoryEvent.total}`);
     
     const payment: Payment = {
       id: paymentId,

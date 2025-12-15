@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { OrdeServiceModule } from './orde-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
@@ -10,6 +11,7 @@ async function bootstrap() {
       options: {
         urls: ['amqp://admin:admin@rabbitmq:5672'],
         exchange: 'ecommerce.exchange',
+        exchangeType: 'topic',
         queue: 'order-queue',
         queueOptions: {
           durable: false,
@@ -19,6 +21,7 @@ async function bootstrap() {
   );
 
   await app.listen();
-  console.log('Order Service is listening on RabbitMQ...');
+  const logger = new Logger('OrderBootstrap');
+  logger.log('Order Service is listening on RabbitMQ...');
 }
 bootstrap();

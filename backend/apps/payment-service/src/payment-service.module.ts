@@ -11,6 +11,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         transport: Transport.RMQ,
         options: {
           urls: ['amqp://admin:admin@rabbitmq:5672'],
+          exchangeType: 'topic',
           queue: 'payment-queue',
           queueOptions: {
             durable: false,

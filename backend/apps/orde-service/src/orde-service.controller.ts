@@ -1,6 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { OrdeServiceService } from './orde-service.service';
-import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { EventPattern, Payload } from '@nestjs/microservices';
 import {
   InventoryInsufficientEvent,
   PaymentFailedEvent,
@@ -9,6 +9,7 @@ import {
 
 @Controller()
 export class OrdeServiceController {
+  private readonly logger = new Logger(OrdeServiceController.name);
   constructor(private readonly ordeServiceService: OrdeServiceService) {}
 
   @Get()
@@ -19,30 +20,30 @@ export class OrdeServiceController {
   @EventPattern('inventory.insufficient')
   async handleInventoryInsufficient(@Payload() data: InventoryInsufficientEvent) {
     try {
-      console.log('[Order Service] Received inventory.insufficient event:', data);
+  this.logger.log(`Received inventory.insufficient event: ${data.orderId}`);
       await this.ordeServiceService.cancelOrder(data.orderId, 'Insufficient stock');
     } catch (error) {
-      console.error('[Order Service] Error processing inventory.insufficient:', error);
+  this.logger.error('Error processing inventory.insufficient', error as any);
     }
   }
 
   @EventPattern('payment.failed')
   async handlePaymentFailed(@Payload() data: PaymentFailedEvent) {
     try {
-      console.log('[Order Service] Received payment.failed event:', data);
-      await this.ordeServiceService.cancelOrder(data.orderId, data.reason);
+            this.logger.log(`Received payment.failed event: ${data.orderId}`);
+            await this.ordeServiceService.cancelOrder(data.orderId, data.reason);
     } catch (error) {
-      console.error('[Order Service] Error processing payment.failed:', error);
+  this.logger.error('Error processing payment.failed', error as any);
     }
   }
 
   @EventPattern('shipping.delivered')
   async handleShippingDelivered(@Payload() data: ShippingDeliveredEvent) {
     try {
-      console.log('[Order Service] Received shipping.delivered event:', data);
+  this.logger.log(`Received shipping.delivered event: ${data.orderId}`);
       await this.ordeServiceService.completeOrder(data.orderId);
     } catch (error) {
-      console.error('[Order Service] Error processing shipping.delivered:', error);
+  this.logger.error('Error processing shipping.delivered', error as any);
     }
   }
 }
