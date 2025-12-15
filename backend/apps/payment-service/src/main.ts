@@ -9,6 +9,7 @@ async function bootstrap() {
       transport: Transport.RMQ,
       options: {
         urls: ['amqp://admin:admin@rabbitmq:5672'],
+        exchange: 'ecommerce.exchange',
         queue: 'payment-queue',
         queueOptions: {
           durable: false,
@@ -20,4 +21,5 @@ async function bootstrap() {
   await app.listen();
   console.log('Payment Service is listening on RabbitMQ...');
 }
+
 bootstrap();

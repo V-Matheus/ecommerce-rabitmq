@@ -17,6 +17,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: ['amqp://admin:admin@rabbitmq:5672'],
+      exchange: 'ecommerce.exchange',
       queue: 'gateway-queue',
       queueOptions: {
         durable: false,

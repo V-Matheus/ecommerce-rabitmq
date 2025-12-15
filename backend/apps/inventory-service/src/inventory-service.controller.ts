@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { InventoryServiceService } from './inventory-service.service';
-import { EventPattern, Payload, Ctx, RmqContext } from '@nestjs/microservices';
+import { EventPattern, Payload, Ctx, RmqContext, MessagePattern } from '@nestjs/microservices';
 import { OrderCreatedEvent, OrderCancelledEvent } from '../../common/dto/events.dto';
 
 @Controller()
@@ -12,7 +12,7 @@ export class InventoryServiceController {
     return this.inventoryServiceService.getHello();
   }
 
-  @EventPattern('order.created')
+  @MessagePattern('order.created')
   async handleOrderCreated(@Payload() data: OrderCreatedEvent) {
     try {
       console.log('[Inventory Service] Received order.created event:', data);
@@ -32,5 +32,10 @@ export class InventoryServiceController {
       console.error('[Inventory Service] Error processing order.cancelled:', error);
       // Let Nest/RMQ transport handle ack/nack and reconnection
     }
+  }
+
+  @EventPattern('inventory.reserved')
+  async handleInventoryReserved(@Payload() data: any) {
+      console.log('[Inventory Service] Received inventory.reserved event:', data);
   }
 }

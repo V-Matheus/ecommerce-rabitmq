@@ -90,7 +90,7 @@ export class GatewayController {
     };
 
   // Publish to inventory so it can reserve stock
-  this.inventoryClient.emit('order.created', event);
+  this.inventoryClient.send('order.created', event);
   console.log('[Gateway] Order created and event published to inventory:', orderId);
 
     return order;
