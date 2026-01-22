@@ -13,6 +13,7 @@ async function bootstrap() {
         exchange: 'ecommerce.exchange',
         exchangeType: 'topic',
         queue: 'payment-queue',
+        routingKey: 'inventory.reserved',
         queueOptions: {
           durable: false,
         },

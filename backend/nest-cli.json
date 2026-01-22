@@ -37,13 +37,13 @@
         "tsConfigPath": "apps/inventory-service/tsconfig.app.json"
       }
     },
-    "orde-service": {
+    "order-service": {
       "type": "application",
-      "root": "apps/orde-service",
+      "root": "apps/order-service",
       "entryFile": "main",
-      "sourceRoot": "apps/orde-service/src",
+      "sourceRoot": "apps/order-service/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/orde-service/tsconfig.app.json"
+        "tsConfigPath": "apps/order-service/tsconfig.app.json"
       }
     },
     "payment-service": {

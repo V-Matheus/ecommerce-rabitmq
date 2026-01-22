@@ -42,7 +42,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        APP_NAME: orde-service
+        APP_NAME: order-service
     container_name: order-service
     environment:
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672

@@ -10,7 +10,10 @@ async function bootstrap() {
       transport: Transport.RMQ,
       options: {
         urls: ['amqp://admin:admin@rabbitmq:5672'],
+        exchange: 'ecommerce.exchange',
+        exchangeType: 'topic',
         queue: 'shipping-queue',
+        routingKey: 'payment.approved',
         queueOptions: {
           durable: false,
         },

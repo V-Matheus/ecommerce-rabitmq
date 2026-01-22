@@ -21,6 +21,7 @@ async function bootstrap() {
       exchange: 'ecommerce.exchange',
       exchangeType: 'topic',
       queue: 'gateway-queue',
+      routingKey: '#',
       queueOptions: {
         durable: false,
       },

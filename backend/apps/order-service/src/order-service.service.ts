@@ -1,5 +1,5 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
+import { RabbitMQPublisher } from '../../common/rabbitmq.service';
 import { OrderCancelledEvent } from '../../common/dto/events.dto';
 
 interface Order {
@@ -11,14 +11,11 @@ interface Order {
 }
 
 @Injectable()
-export class OrdeServiceService {
-  private readonly logger = new Logger(OrdeServiceService.name);
+export class OrderServiceService {
+  private readonly logger = new Logger(OrderServiceService.name);
   private orders: Map<number, Order> = new Map();
 
-  constructor(
-    @Inject('RABBITMQ_CLIENT')
-    private readonly rabbitClient: ClientProxy,
-  ) {}
+  constructor(private readonly rabbitMQPublisher: RabbitMQPublisher) {}
 
   getHello(): string {
     return 'Order Service is running!';
@@ -26,7 +23,7 @@ export class OrdeServiceService {
 
   async cancelOrder(orderId: number, reason: string): Promise<void> {
     this.logger.log(`Cancelling order ${orderId}. Reason: ${reason}`);
-    
+
     const order = this.orders.get(orderId);
     if (!order) {
       this.logger.error(`Order ${orderId} not found`);
@@ -43,27 +40,27 @@ export class OrdeServiceService {
       items: order.items,
     };
 
-  this.rabbitClient.emit('order.cancelled', event);
-  this.logger.log(`Order ${orderId} cancelled and event published`);
+    await this.rabbitMQPublisher.publish('order.cancelled', event);
+    this.logger.log(`Order ${orderId} cancelled and event published`);
   }
 
   async completeOrder(orderId: number): Promise<void> {
-  this.logger.log(`Completing order ${orderId}`);
-    
+    this.logger.log(`Completing order ${orderId}`);
+
     const order = this.orders.get(orderId);
     if (!order) {
-  this.logger.error(`Order ${orderId} not found`);
+      this.logger.error(`Order ${orderId} not found`);
       return;
     }
 
     order.status = 'COMPLETED';
     this.orders.set(orderId, order);
-  this.logger.log(`Order ${orderId} completed successfully!`);
+    this.logger.log(`Order ${orderId} completed successfully!`);
   }
 
   registerOrder(order: Order): void {
-  this.orders.set(order.id, order);
-  this.logger.log(`Order ${order.id} registered`);
+    this.orders.set(order.id, order);
+    this.logger.log(`Order ${order.id} registered`);
   }
 
   getOrder(orderId: number): Order | undefined {

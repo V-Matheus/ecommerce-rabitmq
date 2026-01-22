@@ -1,25 +1,11 @@
 import { Module } from '@nestjs/common';
 import { InventoryServiceController } from './inventory-service.controller';
 import { InventoryServiceService } from './inventory-service.service';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { RabbitMQPublisher } from '../../common/rabbitmq.service';
 
 @Module({
-  imports: [
-    ClientsModule.register([
-      {
-        name: 'RABBITMQ_CLIENT',
-        transport: Transport.RMQ,
-        options: {
-          urls: ['amqp://admin:admin@rabbitmq:5672'],
-          queue: 'inventory-queue',
-          queueOptions: {
-            durable: false,
-          },
-        },
-      },
-    ]),
-  ],
+  imports: [],
   controllers: [InventoryServiceController],
-  providers: [InventoryServiceService],
+  providers: [InventoryServiceService, RabbitMQPublisher],
 })
 export class InventoryServiceModule {}

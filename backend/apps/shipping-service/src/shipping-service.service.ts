@@ -1,5 +1,5 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
+import { RabbitMQPublisher } from '../../common/rabbitmq.service';
 import {
   PaymentApprovedEvent,
   ShippingCreatedEvent,
@@ -19,17 +19,14 @@ export class ShippingServiceService {
   private shipments: Shipment[] = [];
   private shipmentIdCounter = 1;
 
-  constructor(
-    @Inject('RABBITMQ_CLIENT')
-    private readonly rabbitClient: ClientProxy,
-  ) {}
+  constructor(private readonly rabbitMQPublisher: RabbitMQPublisher) {}
 
   getHello(): string {
     return 'Shipping Service is running!';
   }
 
   async createShipment(paymentEvent: PaymentApprovedEvent): Promise<void> {
-  this.logger.log(`Creating shipment for order: ${paymentEvent.orderId}`);
+    this.logger.log(`Creating shipment for order: ${paymentEvent.orderId}`);
 
     const shipmentId = this.shipmentIdCounter++;
     const trackingCode = `TRK${Date.now()}${shipmentId}`;
@@ -43,7 +40,7 @@ export class ShippingServiceService {
 
     this.shipments.push(shipment);
 
-  this.logger.log(`Shipment created: ${trackingCode}`);
+    this.logger.log(`Shipment created: ${trackingCode}`);
 
     // Publicar evento de envio criado
     const createdEvent: ShippingCreatedEvent = {
@@ -52,7 +49,7 @@ export class ShippingServiceService {
       trackingCode,
     };
 
-    this.rabbitClient.emit('shipping.created', createdEvent);
+    await this.rabbitMQPublisher.publish('shipping.created', createdEvent);
 
     // Simular entrega após 5 segundos
     setTimeout(() => {
@@ -60,7 +57,7 @@ export class ShippingServiceService {
     }, 5000);
   }
 
-  private deliverShipment(shipment: Shipment): void {
+  private async deliverShipment(shipment: Shipment): Promise<void> {
     this.logger.log(`Delivering shipment: ${shipment.trackingCode}`);
 
     shipment.status = 'DELIVERED';
@@ -72,7 +69,7 @@ export class ShippingServiceService {
       deliveredAt: new Date(),
     };
 
-  this.rabbitClient.emit('shipping.delivered', deliveredEvent);
-  this.logger.log(`Shipment delivered: ${shipment.trackingCode}`);
+    await this.rabbitMQPublisher.publish('shipping.delivered', deliveredEvent);
+    this.logger.log(`Shipment delivered: ${shipment.trackingCode}`);
   }
 }

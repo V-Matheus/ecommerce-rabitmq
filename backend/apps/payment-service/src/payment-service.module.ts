@@ -1,26 +1,11 @@
 import { Module } from '@nestjs/common';
 import { PaymentServiceController } from './payment-service.controller';
 import { PaymentServiceService } from './payment-service.service';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { RabbitMQPublisher } from '../../common/rabbitmq.service';
 
 @Module({
-  imports: [
-    ClientsModule.register([
-      {
-        name: 'RABBITMQ_CLIENT',
-        transport: Transport.RMQ,
-        options: {
-          urls: ['amqp://admin:admin@rabbitmq:5672'],
-          exchangeType: 'topic',
-          queue: 'payment-queue',
-          queueOptions: {
-            durable: false,
-          },
-        },
-      },
-    ]),
-  ],
+  imports: [],
   controllers: [PaymentServiceController],
-  providers: [PaymentServiceService],
+  providers: [PaymentServiceService, RabbitMQPublisher],
 })
 export class PaymentServiceModule {}

@@ -1,5 +1,5 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
+import { RabbitMQPublisher } from '../../common/rabbitmq.service';
 import {
   OrderCreatedEvent,
   OrderCancelledEvent,
@@ -17,24 +17,21 @@ export class InventoryServiceService {
     { id: 3, name: 'Teclado', price: 150, stock: 30 },
   ];
 
-  constructor(
-    @Inject('RABBITMQ_CLIENT')
-    private readonly rabbitClient: ClientProxy,
-  ) {}
+  constructor(private readonly rabbitMQPublisher: RabbitMQPublisher) {}
 
   getHello(): string {
     return 'Inventory Service is running!';
   }
 
   async reserveStock(orderEvent: OrderCreatedEvent): Promise<void> {
-  this.logger.log(`Checking stock for order: ${orderEvent.orderId}`);
+    this.logger.log(`Checking stock for order: ${orderEvent.orderId}`);
 
     const missingProducts: { productId: number; requested: number; available: number }[] = [];
 
     // Verificar se há estoque suficiente
     for (const item of orderEvent.items) {
       const product = this.products.find(p => p.id === item.productId);
-      
+
       if (!product) {
         missingProducts.push({
           productId: item.productId,
@@ -53,13 +50,13 @@ export class InventoryServiceService {
     // Se não houver estoque suficiente, publicar evento de estoque insuficiente
     if (missingProducts.length > 0) {
       this.logger.warn(`Insufficient stock for order: ${orderEvent.orderId}`);
-      
+
       const event: InventoryInsufficientEvent = {
         orderId: orderEvent.orderId,
         missingProducts,
       };
 
-      this.rabbitClient.emit('inventory.insufficient', event);
+      await this.rabbitMQPublisher.publish('inventory.insufficient', event);
       return;
     }
 
@@ -83,21 +80,21 @@ export class InventoryServiceService {
       total,
     };
 
-  this.rabbitClient.emit('inventory.reserved', event);
+    await this.rabbitMQPublisher.publish('inventory.reserved', event);
   }
 
   async releaseStock(orderEvent: OrderCancelledEvent): Promise<void> {
-  this.logger.log(`Releasing stock for cancelled order: ${orderEvent.orderId}`);
+    this.logger.log(`Releasing stock for cancelled order: ${orderEvent.orderId}`);
 
     // Devolver o estoque
     for (const item of orderEvent.items) {
       const product = this.products.find(p => p.id === item.productId);
       if (product) {
-    product.stock += item.quantity;
-    this.logger.log(`Released ${item.quantity} units of ${product.name}. Current stock: ${product.stock}`);
+        product.stock += item.quantity;
+        this.logger.log(`Released ${item.quantity} units of ${product.name}. Current stock: ${product.stock}`);
       }
     }
 
-  this.logger.log(`Stock released for order: ${orderEvent.orderId}`);
+    this.logger.log(`Stock released for order: ${orderEvent.orderId}`);
   }
 }

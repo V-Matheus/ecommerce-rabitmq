@@ -1,5 +1,5 @@
 import { Controller, Get, Logger } from '@nestjs/common';
-import { OrdeServiceService } from './orde-service.service';
+import { OrderServiceService } from './order-service.service';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import {
   InventoryInsufficientEvent,
@@ -8,9 +8,9 @@ import {
 } from '../../common/dto/events.dto';
 
 @Controller()
-export class OrdeServiceController {
-  private readonly logger = new Logger(OrdeServiceController.name);
-  constructor(private readonly ordeServiceService: OrdeServiceService) {}
+export class OrderServiceController {
+  private readonly logger = new Logger(OrderServiceController.name);
+  constructor(private readonly ordeServiceService: OrderServiceService) {}
 
   @Get()
   getHello(): string {

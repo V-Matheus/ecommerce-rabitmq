@@ -35,8 +35,4 @@ export class InventoryServiceController {
     }
   }
 
-  @EventPattern('inventory.reserved')
-  async handleInventoryReserved(@Payload() data: any) {
-  this.logger.log(`Received inventory.reserved event: ${data.orderId ?? 'unknown'}`);
-  }
 }

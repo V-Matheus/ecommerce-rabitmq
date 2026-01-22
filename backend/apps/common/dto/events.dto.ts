@@ -1,5 +1,31 @@
 // DTOs compartilhados entre os microserviços
 
+// Estados detalhados do pedido para rastreamento em tempo real
+export enum OrderStatus {
+  PENDING = 'PENDING',                    // Pedido criado, aguardando processamento
+  IN_INVENTORY = 'IN_INVENTORY',          // Verificando estoque
+  INVENTORY_CONFIRMED = 'INVENTORY_CONFIRMED', // Estoque reservado
+  IN_PAYMENT = 'IN_PAYMENT',              // Processando pagamento
+  PAYMENT_CONFIRMED = 'PAYMENT_CONFIRMED', // Pagamento aprovado
+  IN_SHIPPING = 'IN_SHIPPING',            // Preparando envio
+  SHIPPED = 'SHIPPED',                    // Enviado
+  COMPLETED = 'COMPLETED',                // Entregue
+  CANCELLED = 'CANCELLED',                // Cancelado
+}
+
+// Mapeamento de status para mensagens amigáveis
+export const OrderStatusMessages: Record<OrderStatus, string> = {
+  [OrderStatus.PENDING]: 'Pedido recebido',
+  [OrderStatus.IN_INVENTORY]: 'Verificando estoque...',
+  [OrderStatus.INVENTORY_CONFIRMED]: 'Estoque reservado',
+  [OrderStatus.IN_PAYMENT]: 'Processando pagamento...',
+  [OrderStatus.PAYMENT_CONFIRMED]: 'Pagamento aprovado',
+  [OrderStatus.IN_SHIPPING]: 'Preparando envio...',
+  [OrderStatus.SHIPPED]: 'Pedido enviado',
+  [OrderStatus.COMPLETED]: 'Pedido entregue',
+  [OrderStatus.CANCELLED]: 'Pedido cancelado',
+};
+
 export class OrderItemDto {
   productId: number;
   quantity: number;

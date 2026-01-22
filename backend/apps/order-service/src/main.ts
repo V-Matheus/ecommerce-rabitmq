@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
-import { OrdeServiceModule } from './orde-service.module';
+import { OrderServiceModule } from './order-service.module';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    OrdeServiceModule,
+    OrderServiceModule,
     {
       transport: Transport.RMQ,
       options: {
@@ -13,6 +13,7 @@ async function bootstrap() {
         exchange: 'ecommerce.exchange',
         exchangeType: 'topic',
         queue: 'order-queue',
+        routingKey: '#',
         queueOptions: {
           durable: false,
         },
